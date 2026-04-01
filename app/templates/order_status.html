@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Order Status</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Leaflet (map) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <style>
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: linear-gradient(135deg,#0f172a,#1e293b);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+
+    .card{
+      width:100%;
+      max-width:980px;
+      background:rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px);
+      border-radius:18px;
+      padding:24px;
+      box-shadow:0 20px 60px rgba(0,0,0,.4);
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    h2{margin:0 0 10px 0}
+    .sub{opacity:.8;font-size:13px;margin-bottom:14px}
+
+    .layout{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+    }
+    @media (max-width: 920px){
+      .layout{grid-template-columns:1fr}
+    }
+
+    .panel{
+      background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:16px;
+      padding:14px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 210px 1fr;
+      gap:12px;
+      font-size:15px;
+    }
+
+    .badge{
+      display:inline-block;
+      padding:4px 12px;
+      border-radius:999px;
+      font-size:13px;
+      font-weight:800;
+      border:1px solid rgba(255,255,255,.3);
+      background:rgba(255,255,255,.12);
+    }
+
+    .ok{border-color:#86efac}
+    .warn{border-color:#fde68a}
+    .err{border-color:#fca5a5}
+
+    .muted{
+      margin-top:14px;
+      font-size:12px;
+      opacity:.75;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    a{color:#93c5fd}
+    code{background:rgba(255,255,255,.10);padding:2px 6px;border-radius:8px}
+
+    #map{
+      height:360px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      overflow:hidden;
+    }
+
+    .errorBox{
+      display:none;
+      margin-top:12px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(252,165,165,.55);
+      background:rgba(239,68,68,.16);
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .btnRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    .btn{
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      color:#fff;
+      font-weight:800;
+      font-size:13px;
+      padding:10px 12px;
+      border-radius:12px;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.18);
+    }
+    .btn:hover{filter:brightness(1.08)}
+  </style>
+</head>
+
+<body>
+<div class="card">
+  <h2>🚚 Luggage Delivery – Phase-2 Status</h2>
+  <div class="sub">
+    Order: <code id="oid">{{ order_id }}</code> · Auto-refresh every 3s
+  </div>
+
+  <div class="layout">
+    <!-- LEFT: Status -->
+    <div class="panel">
+      <div class="grid">
+        <div>Order ID</div>
+        <div><code>{{ order_id }}</code></div>
+
+        <div>Overall</div>
+        <div id="overall">loading…</div>
+
+        <div>Airline Check-in</div>
+        <div id="checkin">loading…</div>
+
+        <div>Bag Drop</div>
+        <div id="bagdrop">loading…</div>
+
+        <div>Bag Drop Appointment</div>
+        <div id="bagdropTime">—</div>
+
+        <div>Destination Delivery</div>
+        <div id="delivery">loading…</div>
+
+        <div>Pickup Time</div>
+        <div id="pickup">—</div>
+
+        <div>ETA to Airport</div>
+        <div id="eta">—</div>
+
+        <div>Distance</div>
+        <div id="dist">—</div>
+
+        <div>Price</div>
+        <div id="price">—</div>
+
+        <div>Error</div>
+        <div id="error">—</div>
+      </div>
+
+      <div class="errorBox" id="apiError"></div>
+
+      <div class="btnRow">
+        <a class="btn" href="/">← New Order</a>
+        <a class="btn" id="jsonLink" target="_blank">View JSON</a>
+        <a class="btn" id="logsLink" target="_blank">Agent Logs</a>
+        <button class="btn" id="refreshBtn">Refresh Now</button>
+      </div>
+
+      <div class="muted">
+        Tip: Map shows pickup → airport + driver (if tracking exists).
+      </div>
+    </div>
+
+    <!-- RIGHT: Map -->
+    <div class="panel">
+      <div style="font-weight:900;margin-bottom:10px;">🗺️ Live Map</div>
+      <div id="map"></div>
+      <div class="muted">
+        No API key needed (OpenStreetMap + Leaflet).
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const ORDER_ID = "{{ order_id }}";
+
+  // Update links
+  document.getElementById("jsonLink").href = `/api/orders/${ORDER_ID}`;
+  document.getElementById("logsLink").href = `/api/orders/${ORDER_ID}/logs`;
+
+  function badge(value){
+    const v = (value || "").toLowerCase();
+    if(!value) return `<span class="badge warn">pending</span>`;
+    if(v.includes("fail") || v.includes("error")) return `<span class="badge err">${value}</span>`;
+    if(v.includes("success") || v.includes("ok") || v.includes("priced") || v.includes("scheduled") || v.includes("delivered")) {
+      return `<span class="badge ok">${value}</span>`;
+    }
+    return `<span class="badge warn">${value}</span>`;
+  }
+
+  // ---------- Map ----------
+  const map = L.map("map").setView([41.8781, -87.6298], 10); // default Chicago-ish
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+
+  const markers = { pickup:null, airport:null, driver:null };
+  let routeLine = null;
+  let trackLine = null;
+
+  function setMarker(name, lat, lng, label){
+    if(lat == null || lng == null) return null;
+    const ll = [lat, lng];
+    if(!markers[name]){
+      markers[name] = L.marker(ll).addTo(map).bindPopup(label || name);
+    }else{
+      markers[name].setLatLng(ll);
+      markers[name].setPopupContent(label || name);
+    }
+    return ll;
+  }
+
+  function setLine(current, points, dashed=false){
+    if(!points || points.length < 2) return current;
+    if(!current){
+      current = L.polyline(points, { weight: 4, opacity: 0.85, dashArray: dashed ? "6 6" : null }).addTo(map);
+    }else{
+      current.setLatLngs(points);
+    }
+    return current;
+  }
+
+  function fitMap(){
+    const layers = [];
+    Object.values(markers).forEach(m => m && layers.push(m));
+    if(routeLine) layers.push(routeLine);
+    if(trackLine) layers.push(trackLine);
+    if(!layers.length) return;
+
+    const g = L.featureGroup(layers);
+    map.fitBounds(g.getBounds().pad(0.18));
+  }
+
+  // Very small airport-code map fallback (until you store real coords)
+  function airportCoords(code){
+    const m = {
+      ORD: [41.9742, -87.9073],
+      JFK: [40.6413, -73.7781],
+      LGA: [40.7769, -73.8740],
+      SFO: [37.6213, -122.3790],
+      LAX: [33.9416, -118.4085]
+    };
+    return m[(code || "").toUpperCase()] || null;
+  }
+
+  // ---------- API ----------
+  async function fetchOrder(){
+    const r = await fetch(`/api/orders/${ORDER_ID}`);
+    const data = await r.json();
+    if(!r.ok) throw new Error(data.detail || "Failed to fetch order");
+    return data;
+  }
+
+  // Optional: only works if you add GET /api/orders/{order_id}/tracking
+  async function fetchTracking(){
+    try{
+      const r = await fetch(`/api/orders/${ORDER_ID}/tracking`);
+      if(!r.ok) return null;
+      return await r.json();
+    }catch{
+      return null;
+    }
+  }
+
+  function showApiError(msg){
+    const box = document.getElementById("apiError");
+    box.textContent = msg;
+    box.style.display = "block";
+  }
+
+  function clearApiError(){
+    const box = document.getElementById("apiError");
+    box.style.display = "none";
+    box.textContent = "";
+  }
+
+  function render(order, tracking){
+    // Status panel
+    document.getElementById("overall").innerHTML = badge(order.status);
+    document.getElementById("checkin").innerHTML = badge(order.airline_integration_status);
+
+    document.getElementById("bagdrop").innerHTML = badge(order.bagdrop_status);
+    document.getElementById("bagdropTime").textContent = order.bagdrop_appointment_time_iso || "—";
+
+    document.getElementById("delivery").innerHTML = badge(order.destination_delivery_status);
+
+    document.getElementById("pickup").textContent = order.pickup_time_iso || "TBD";
+    document.getElementById("eta").textContent =
+      (order.eta_to_airport_minutes != null) ? `${order.eta_to_airport_minutes} min` : "—";
+    document.getElementById("dist").textContent =
+      (order.distance_km != null) ? `${order.distance_km} km` : "—";
+    document.getElementById("price").textContent =
+      (order.total_price != null) ? `$${Number(order.total_price).toFixed(2)}` : "TBD";
+    document.getElementById("error").textContent = order.phase2_error || "—";
+
+    // Map markers:
+    // If you later add these to OrderOut, they will become real automatically:
+    // order.pickup_lat/order.pickup_lng, order.airport_lat/order.airport_lng
+    const pickupLL = setMarker("pickup", order.pickup_lat, order.pickup_lng, "Pickup");
+
+    let airportLL = null;
+    if(order.airport_lat != null && order.airport_lng != null){
+      airportLL = setMarker("airport", order.airport_lat, order.airport_lng, `Airport (${order.departure_airport || ""})`);
+    }else{
+      const a = airportCoords(order.departure_airport);
+      if(a) airportLL = setMarker("airport", a[0], a[1], `Airport (${order.departure_airport})`);
+    }
+
+    // Route: pickup -> airport
+    if(pickupLL && airportLL){
+      routeLine = setLine(routeLine, [pickupLL, airportLL], false);
+    }
+
+    // Tracking: dashed trail + driver marker
+    if(tracking && Array.isArray(tracking.points) && tracking.points.length){
+      const pts = tracking.points.map(p => [p.latitude, p.longitude]);
+      trackLine = setLine(trackLine, pts, true);
+
+      const last = tracking.points[tracking.points.length - 1];
+      setMarker("driver", last.latitude, last.longitude, `Driver (${last.status || "in_transit"})`);
+    }
+
+    fitMap();
+  }
+
+  async function refresh(){
+    try{
+      const [order, tracking] = await Promise.all([fetchOrder(), fetchTracking()]);
+      clearApiError();
+      render(order, tracking);
+    }catch(e){
+      showApiError(String(e));
+    }
+  }
+
+  document.getElementById("refreshBtn").addEventListener("click", refresh);
+
+  // start
+  refresh();
+  setInterval(refresh, 3000);
+</script>
+
+</body>
+</html>

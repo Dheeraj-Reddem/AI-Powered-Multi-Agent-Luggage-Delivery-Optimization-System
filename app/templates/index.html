@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Luggage Delivery - Booking</title>
+
+  <style>
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      margin: 0;
+      min-height: 100vh;
+
+      background-image: url("/static/background_image.png");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+
+      display: flex;
+      justify-content: flex-end;   /* right side */
+      align-items: center;
+      padding: 24px 48px;
+
+      position: relative;
+    }
+
+    /* dark overlay for readability */
+    body::before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 0;
+    }
+
+    .container{
+      position: relative;
+      z-index: 1;
+
+      max-width: 750px;
+      width: 100%;
+
+      /* transparent glass */
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    h1 { margin: 0 0 8px; color: #fff; }
+    .muted { color: rgba(255,255,255,0.8); margin-top: 0; }
+
+    form{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    label{
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 14px;
+      color: rgba(255,255,255,0.85);
+    }
+
+    input, textarea, button, select{
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 10px;
+      font-size: 14px;
+
+      background: rgba(255,255,255,0.18);
+      color: #fff;
+      outline: none;
+    }
+
+    input::placeholder, textarea::placeholder{
+      color: rgba(255,255,255,0.75);
+    }
+
+    textarea{ min-height: 80px; resize: vertical; }
+
+    .full{ grid-column: 1 / -1; }
+    .row{ display: flex; gap: 10px; }
+
+    button{
+      cursor: pointer;
+      font-weight: 700;
+      background: rgba(255,255,255,0.22);
+      border: 1px solid rgba(255,255,255,0.45);
+    }
+
+    .card{
+      margin-top: 16px;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 12px;
+      background: rgba(0,0,0,0.25);
+      color: #fff;
+    }
+
+    code{
+      background: rgba(255,255,255,0.18);
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff;
+    }
+
+    .error{ color: #ffb3b3; }
+    .ok{ color: #b6ffb6; }
+
+    /* Departure time split row */
+    .time-grid{
+      display: grid;
+      grid-template-columns: 1fr 1fr 140px;
+      gap: 10px;
+    }
+
+    .status-panel{
+  margin-top: 14px;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(0,0,0,0.25);
+}
+
+.status-grid{
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 8px 12px;
+  font-size: 14px;
+}
+
+.badge{
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.12);
+}
+
+.badge.ok{ border-color: rgba(130,255,130,0.35); }
+.badge.warn{ border-color: rgba(255,220,120,0.35); }
+.badge.err{ border-color: rgba(255,140,140,0.35); }
+
+.small-note{
+  margin-top: 10px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.75);
+}
+
+    @media (max-width: 900px){
+      body{ justify-content: center; padding: 16px; }
+      .time-grid{ grid-template-columns: 1fr 1fr; }
+      .time-grid label:last-child{ grid-column: 1 / -1; }
+    }
+
+    a{ color: #fff; }
+
+
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Walking Bags</h1>
+    <p class="muted">Luggage Pickup & Delivery</p>
+
+    <form id="orderForm">
+      <label>
+        Full Name
+        <input name="user_name" placeholder="First name Last name" required />
+      </label>
+
+      <label>
+        Phone
+        <input name="phone" placeholder="EX: 1234567890" required />
+      </label>
+
+      <label>
+        Flight Number
+        <input name="flight_number" placeholder="EX: UA123" required />
+      </label>
+
+      <label>
+        Departure Airport (IATA)
+        <input name="departure_airport" placeholder="EX: ORD" required />
+      </label>
+
+      <label>
+        Passenger First Name
+        <input name="passenger_first_name" placeholder="First name as per ticket" required />
+      </label>
+
+      <label>
+        Passenger Last Name
+        <input name="passenger_last_name" placeholder="Last name as per ticket" required />
+      </label>
+
+      <label class="full">
+        Airline Booking Reference (PNR)
+        <input name="pnr" placeholder="ABC123" required />
+      </label>
+
+      <!-- ✅ Time split (Date + Time + TZ Offset) -->
+      <div class="full time-grid">
+        <label>
+          Departure Date
+          <input type="date" name="departure_date" required />
+        </label>
+
+        <label>
+          Departure Time
+          <input type="time" name="departure_time" required />
+        </label>
+
+        <label>
+          TZ Offset
+          <select name="tz_offset" required>
+            <option value="-06:00" selected>-06:00 (Chicago)</option>
+            <option value="-05:00">-05:00</option>
+            <option value="-07:00">-07:00</option>
+            <option value="-08:00">-08:00</option>
+            <option value="+00:00">+00:00 (UTC)</option>
+          </select>
+        </label>
+      </div>
+
+      <p class="muted full" style="margin-top:-6px;">
+        We will send <code>departure_time_iso</code> like: <code>2025-12-25T08:00:00-06:00</code>
+      </p>
+
+      <label class="full">
+        Pickup Address
+        <textarea name="pickup_address" placeholder="Home pickup address..." required></textarea>
+      </label>
+
+      <label class="full">
+        Destination Home Address
+        <textarea name="destination_address" placeholder="Destination home address after arrival" required></textarea>
+      </label>
+
+      <label>
+        Luggage Count
+        <input type="number" name="luggage_count" min="1" max="10" value="1" required />
+      </label>
+
+      <label>
+        Total Weight (kg)
+        <input type="number" step="0.1" name="luggage_weight_kg" min="0.1" max="200" value="15.0" required />
+      </label>
+
+      <div class="full row">
+        <button type="submit">Create Order</button>
+        <button type="button" id="fillDemo">Fill Demo</button>
+      </div>
+    </form>
+
+    <div id="result" class="card" style="display:none;"></div>
+
+    <script>
+
+  const form = document.getElementById("orderForm");
+  const result = document.getElementById("result");
+  const fillDemo = document.getElementById("fillDemo");
+
+  function buildDepartureISO(dateStr, timeStr, tzOffset) {
+    // dateStr: YYYY-MM-DD
+    // timeStr: HH:MM
+    // tzOffset: -06:00
+    return `${dateStr}T${timeStr}:00${tzOffset}`;
+  }
+
+  fillDemo.addEventListener("click", () => {
+    form.user_name.value = "Dheeraj";
+    form.phone.value = "1234567890";
+
+    form.flight_number.value = "UA123";
+    form.departure_airport.value = "ORD";
+
+    form.departure_date.value = "2025-12-25";
+    form.departure_time.value = "08:00";
+    form.tz_offset.value = "-06:00";
+
+    form.passenger_first_name.value = "Dheeraj";
+    form.passenger_last_name.value = "Reddem";
+    form.pnr.value = "ABC123";
+
+    form.pickup_address.value = "3301 W 51st St, Sioux Falls, SD";
+    form.destination_address.value = "123 Main St, New York, NY";
+
+    form.luggage_count.value = 2;
+    form.luggage_weight_kg.value = 28.5;
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    result.style.display = "block";
+    result.innerHTML = "Submitting...";
+
+    const departure_time_iso = buildDepartureISO(
+      form.departure_date.value,
+      form.departure_time.value,
+      form.tz_offset.value
+    );
+
+    const payload = {
+      user_name: form.user_name.value.trim(),
+      phone: form.phone.value.trim(),
+
+      flight_number: form.flight_number.value.trim(),
+      departure_airport: form.departure_airport.value.trim(),
+      departure_time_iso,
+
+      pickup_address: form.pickup_address.value.trim(),
+      destination_address: form.destination_address.value.trim(),
+
+      passenger_first_name: form.passenger_first_name.value.trim(),
+      passenger_last_name: form.passenger_last_name.value.trim(),
+      pnr: form.pnr.value.trim(),
+
+      luggage_count: Number(form.luggage_count.value),
+      luggage_weight_kg: Number(form.luggage_weight_kg.value),
+    };
+
+    try {
+      const resp = await fetch("/api/orders", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload),
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        result.innerHTML = `<div class="error"><b>Error:</b> ${data.detail || JSON.stringify(data)}</div>`;
+        return;
+      }
+
+      // ✅ STEP 3 UPDATE: Redirect to Phase-2 page
+      const orderId = data.order_id;
+
+      // Optional: show quick message before redirect
+      result.innerHTML = `
+        <div class="ok"><b>Order Created!</b></div>
+        <p>Redirecting to Phase-2 status page...</p>
+      `;
+
+      setTimeout(() => {
+        window.location.href = `/order/${orderId}`;
+      }, 400);
+
+    } catch (err) {
+      result.innerHTML = `<div class="error"><b>Network error:</b> ${err}</div>`;
+    }
+  });
+
+    </script>
+  </div>
+</body>
+</html>
